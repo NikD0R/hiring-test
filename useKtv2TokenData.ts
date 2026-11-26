@@ -1,6 +1,6 @@
-import { useReadContract } from 'wagmi';
-import { type Address } from 'viem';
-import { childContractABI, erc20ABI, tpABI } from '../config/contracts';
+import { useReadContract } from "wagmi";
+import { type Address } from "viem";
+import { childContractABI, erc20ABI, tpABI } from "../config/contracts";
 
 interface UseKtv2TokenDataProps {
   contractAddress: Address | null;
@@ -8,7 +8,11 @@ interface UseKtv2TokenDataProps {
   isChainSupported: boolean;
 }
 
-export const useKtv2TokenData = ({ contractAddress, targetChainId, isChainSupported }: UseKtv2TokenDataProps) => {
+export const useKtv2TokenData = ({
+  contractAddress,
+  targetChainId,
+  isChainSupported,
+}: UseKtv2TokenDataProps) => {
   const baseQueryOptions = {
     enabled: !!contractAddress && isChainSupported && !!targetChainId,
   };
@@ -21,7 +25,7 @@ export const useKtv2TokenData = ({ contractAddress, targetChainId, isChainSuppor
   } = useReadContract({
     address: contractAddress ?? undefined,
     abi: childContractABI,
-    functionName: 'tokenAddr',
+    functionName: "tokenAddr",
     chainId: targetChainId,
     query: baseQueryOptions,
   });
@@ -38,7 +42,7 @@ export const useKtv2TokenData = ({ contractAddress, targetChainId, isChainSuppor
   } = useReadContract({
     address: childTokenAddress,
     abi: erc20ABI,
-    functionName: 'decimals',
+    functionName: "decimals",
     chainId: targetChainId,
     query: tokenQueryOptions,
   });
@@ -51,7 +55,7 @@ export const useKtv2TokenData = ({ contractAddress, targetChainId, isChainSuppor
   } = useReadContract({
     address: childTokenAddress,
     abi: erc20ABI,
-    functionName: 'symbol',
+    functionName: "symbol",
     chainId: targetChainId,
     query: tokenQueryOptions,
   });
@@ -64,38 +68,40 @@ export const useKtv2TokenData = ({ contractAddress, targetChainId, isChainSuppor
   } = useReadContract({
     address: childTokenAddress,
     abi: erc20ABI,
-    functionName: 'name',
+    functionName: "name",
     chainId: targetChainId,
     query: tokenQueryOptions,
   });
   const ktv2TokenName = ktv2TokenNameData as string | undefined;
 
   // --- Price in native (Uniswap v2/v3) ---
-  const { data: poolAddressData, isLoading: isLoadingPoolAddress } = useReadContract({
-    address: contractAddress ?? undefined,
-    abi: childContractABI,
-    functionName: 'pool', // Address used as pair (Uni v2) or pool (Uni v3)
-
-  });
+  const { data: poolAddressData, isLoading: isLoadingPoolAddress } =
+    useReadContract({
+      address: contractAddress ?? undefined,
+      abi: childContractABI,
+      functionName: "pool", // Address used as pair (Uni v2) or pool (Uni v3)
+      chainId: targetChainId,
+      query: baseQueryOptions,
+    });
   const poolAddress = poolAddressData as Address | undefined;
 
-  const { data: tpContractAddressData, isLoading: isLoadingTpContractAddress } = useReadContract({
-    address: contractAddress ?? undefined,
-    abi: childContractABI,
-    functionName: 'tp',
-
-  });
+  const { data: tpContractAddressData, isLoading: isLoadingTpContractAddress } =
+    useReadContract({
+      address: contractAddress ?? undefined,
+      abi: childContractABI,
+      functionName: "tp",
+    });
   const tpContractAddress = tpContractAddressData as Address | undefined;
 
   // KTV2 version flag (true => Uniswap v2, false => Uniswap v3)
   const { data: isV2Data } = useReadContract({
     address: contractAddress ?? undefined,
     abi: childContractABI,
-    functionName: 'v2',
+    functionName: "v2",
     chainId: targetChainId,
     query: baseQueryOptions,
   });
-  const isV2 = isV2Data as boolean;
+  const isV2 = isV2Data as boolean | undefined;
 
   // Read token price: v2 -> priceV2 (Uniswap v2), otherwise -> price (Uniswap v3)
   const {
@@ -105,14 +111,16 @@ export const useKtv2TokenData = ({ contractAddress, targetChainId, isChainSuppor
   } = useReadContract({
     address: tpContractAddress,
     abi: tpABI,
-    functionName: isV2 ? 'priceV2' : 'price',
+    functionName: isV2 ? "priceV2" : "price",
     args: poolAddress ? [poolAddress] : undefined,
     chainId: targetChainId,
     query: {
-      enabled: isV2 !== undefined && !!tpContractAddress && !!poolAddress && isChainSupported && !!targetChainId,
+      enabled: isV2 !== undefined && !!tpContractAddress && !!poolAddress,
     },
   });
-  const ktv2TokenPriceInNative = ktv2TokenPriceInNativeData as bigint | undefined;
+  const ktv2TokenPriceInNative = ktv2TokenPriceInNativeData as
+    | bigint
+    | undefined;
 
   return {
     childTokenAddress,
@@ -130,7 +138,15 @@ export const useKtv2TokenData = ({ contractAddress, targetChainId, isChainSuppor
     isLoadingKtv2TokenName,
     ktv2TokenPriceInNative,
     ktv2TokenPriceInNativeError,
-    isLoadingKtv2TokenPriceInNative: isLoadingKtv2TokenPriceInNative || isLoadingPoolAddress || isLoadingTpContractAddress,
-    isLoading: isLoadingChildContractData || isLoadingKtv2TokenDecimals || isLoadingKtv2TokenSymbol || isLoadingKtv2TokenName || isLoadingKtv2TokenPriceInNative,
+    isLoadingKtv2TokenPriceInNative:
+      isLoadingKtv2TokenPriceInNative ||
+      isLoadingPoolAddress ||
+      isLoadingTpContractAddress,
+    isLoading:
+      isLoadingChildContractData ||
+      isLoadingKtv2TokenDecimals ||
+      isLoadingKtv2TokenSymbol ||
+      isLoadingKtv2TokenName ||
+      isLoadingKtv2TokenPriceInNative,
   };
-}; 
+};
